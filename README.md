@@ -4,9 +4,8 @@ Framework-independent bridge between a Senler host and an embedded application.
 No React, CSS or other runtime dependencies.
 
 ```sh
-npm install @senlerio/bridge@https://github.com/SenlerBot/senler-bridge/archive/refs/tags/v1.0.0.tar.gz
+npm install @senlerio/bridge@https://github.com/SenlerBot/senler-bridge/archive/refs/tags/v1.0.1.tar.gz
 ```
-
 
 Applications opened inside Senler use the typed bridge instead of calling
 `window.postMessage` directly. The bridge validates the parent origin, applies
@@ -45,15 +44,6 @@ await bridge.connect();
 
 OAuth and signed launch sessions remain the authentication boundary. Do not
 send Senler access tokens or application secrets through the bridge.
-
-Subpath imports are also available when a project wants narrower imports:
-
-```tsx
-import { Button } from '@senler/ui/atoms/button';
-import { SearchableSelect } from '@senler/ui/compound/searchable-select';
-import { LayoutContainer } from '@senler/ui/layout/container';
-```
-
 
 ## Migration and development
 
