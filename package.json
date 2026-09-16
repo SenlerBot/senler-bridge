@@ -1,0 +1,40 @@
+{
+  "name": "@senlerio/bridge",
+  "version": "1.0.0",
+  "description": "Framework-independent Senler embedded application bridge",
+  "type": "module",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/SenlerBot/senler-bridge.git"
+  },
+  "sideEffects": false,
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "files": [
+    "dist",
+    "README.md",
+    "LICENSE"
+  ],
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js",
+      "default": "./dist/index.js"
+    },
+    "./package.json": "./package.json"
+  },
+  "scripts": {
+    "check:fast": "sh scripts/run-heavy-task.sh --repo senler-ui --task bridge-check -- npm run check:internal",
+    "check:internal": "tsc --noEmit",
+    "build": "sh scripts/run-heavy-task.sh --repo senler-ui --task bridge-build -- npm run build:internal",
+    "build:internal": "node -e \"require('node:fs').rmSync('dist', { recursive: true, force: true })\" && tsc && node --test test/*.test.mjs && node scripts/package-state.mjs --write",
+    "prepack": "node scripts/package-state.mjs --check"
+  },
+  "engines": {
+    "node": ">=20"
+  },
+  "devDependencies": {
+    "typescript": "~6.0.3"
+  }
+}
