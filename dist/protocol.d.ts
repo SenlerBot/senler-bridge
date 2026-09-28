@@ -101,6 +101,7 @@ export interface SenlerBridgeFunnelConfiguratorLaunch {
     installation_id: string;
     funnel_id: string;
     source_id: string | null;
+    metric_key: string;
     element: {
         id: string;
         key: string;
@@ -130,6 +131,7 @@ export interface SenlerBridgeAutomationStepConfiguratorResult {
 export interface SenlerBridgeFunnelConfiguratorResult {
     kind: 'funnel_configurator';
     configuration: SenlerBridgeJsonObject;
+    data_source_key: string;
 }
 export type SenlerBridgeSubmitResult = SenlerBridgeToolConfiguratorResult | SenlerBridgeAutomationStepConfiguratorResult | SenlerBridgeFunnelConfiguratorResult;
 export type SenlerBridgeElementAction = 'highlight' | 'scroll_to' | 'focus' | 'click' | 'fill' | 'clear' | 'select' | 'toggle';

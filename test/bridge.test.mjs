@@ -181,6 +181,28 @@ assert.deepEqual(await host.requestToolConfiguratorSubmit(), {
   private_data_action: 'preserve',
   private_data_required: true,
 });
+const funnelContext = {
+  ui: { language: 'en', theme: 'dark' },
+  launch: {
+    type: 'funnel_configurator', app_id: 'app-1', project_id: 'project-1',
+    installation_id: 'installation-1', funnel_id: 'funnel-1', source_id: null,
+    element: { id: 'element-1', key: 'visitors', title: 'Visitors' },
+    metric_key: 'visitors', configuration: { counter_id: '42' },
+  },
+};
+host.setContext(funnelContext);
+assert.deepEqual(observedContexts.at(-1), funnelContext);
+const funnelResult = {
+  kind: 'funnel_configurator', configuration: { counter_id: '42' },
+  data_source_key: 'metrika:counter:42',
+};
+client.onFunnelConfiguratorSubmit(() => funnelResult);
+assert.deepEqual(await host.requestFunnelConfiguratorSubmit(), funnelResult);
+client.onFunnelConfiguratorSubmit(() => { throw new Error('Choose a counter'); });
+await assert.rejects(host.requestFunnelConfiguratorSubmit(), /Choose a counter/);
+client.onFunnelConfiguratorSubmit(() => funnelResult);
+assert.deepEqual(await host.requestFunnelConfiguratorSubmit(), funnelResult);
+
 const automationContext = {
   ui: { language: 'en', theme: 'dark' },
   launch: {

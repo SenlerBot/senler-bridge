@@ -139,6 +139,7 @@ export interface SenlerBridgeFunnelConfiguratorLaunch {
   installation_id: string;
   funnel_id: string;
   source_id: string | null;
+  metric_key: string;
   element: { id: string; key: string; title: string };
   configuration: SenlerBridgeJsonObject;
 }
@@ -173,6 +174,7 @@ export interface SenlerBridgeAutomationStepConfiguratorResult {
 export interface SenlerBridgeFunnelConfiguratorResult {
   kind: 'funnel_configurator';
   configuration: SenlerBridgeJsonObject;
+  data_source_key: string;
 }
 
 export type SenlerBridgeSubmitResult =
@@ -502,12 +504,14 @@ function parseLaunchContext(value: unknown): SenlerBridgeLaunchContext | null {
   }
   if (value.type === 'funnel_configurator') {
     if (!isNonEmptyString(value.installation_id) || !isNonEmptyString(value.funnel_id) ||
+      !isNonEmptyString(value.metric_key) || value.metric_key.length > 64 ||
       !(value.source_id === null || isNonEmptyString(value.source_id)) ||
       !isRecord(value.element) || !isNonEmptyString(value.element.id) ||
       !isNonEmptyString(value.element.key) || !isNonEmptyString(value.element.title) ||
       value.element.title.length > MAX_TITLE_LENGTH || !isJsonObject(value.configuration)) return null;
     return { type: 'funnel_configurator', app_id: value.app_id, project_id: value.project_id,
       installation_id: value.installation_id, funnel_id: value.funnel_id, source_id: value.source_id,
+      metric_key: value.metric_key,
       element: { id: value.element.id, key: value.element.key, title: value.element.title }, configuration: value.configuration };
   }
   if (value.type === 'embedded_page') {
@@ -662,8 +666,9 @@ export function parseSenlerBridgeToolConfiguratorResult(
 }
 
 export function parseSenlerBridgeFunnelConfiguratorResult(value: unknown): SenlerBridgeFunnelConfiguratorResult | null {
-  return isRecord(value) && value.kind === 'funnel_configurator' && isJsonObject(value.configuration)
-    ? { kind: 'funnel_configurator', configuration: value.configuration } : null;
+  return isRecord(value) && value.kind === 'funnel_configurator' && isJsonObject(value.configuration) &&
+    typeof value.data_source_key === 'string' && /^[A-Za-z0-9._:/-]{1,256}$/.test(value.data_source_key)
+    ? { kind: 'funnel_configurator', configuration: value.configuration, data_source_key: value.data_source_key } : null;
 }
 
 export function parseSenlerBridgeAutomationStepConfiguratorResult(
