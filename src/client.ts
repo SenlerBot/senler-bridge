@@ -9,6 +9,7 @@ import {
   parseSenlerBridgeElementActionResult,
   parseSenlerBridgeInitMessage,
   parseSenlerBridgeAutomationStepConfiguratorResult,
+  parseSenlerBridgeFunnelConfiguratorResult,
   parseSenlerBridgeRequestMessage,
   parseSenlerBridgeToolConfiguratorResult,
   parseSenlerBridgeUiMessage,
@@ -16,6 +17,7 @@ import {
   SENLER_BRIDGE_BOOTSTRAP_MODE,
   SENLER_BRIDGE_REQUEST,
   type SenlerBridgeAutomationStepConfiguratorResult,
+  type SenlerBridgeFunnelConfiguratorResult,
   type SenlerBridgeBootstrapMode,
   type SenlerBridgeContext,
   type SenlerBridgeElementActionRequest,
@@ -44,6 +46,7 @@ interface SenlerBridgeClientWindow extends Window {
 }
 
 export interface SenlerBridgeClient {
+  onFunnelConfiguratorSubmit(handler: () => SenlerBridgeFunnelConfiguratorResult | Promise<SenlerBridgeFunnelConfiguratorResult>): () => void;
   connect(): Promise<SenlerBridgeContext>;
   getContext(): SenlerBridgeContext | null;
   onContextChange(
@@ -165,6 +168,7 @@ export function createSenlerBridgeClient(
         | SenlerBridgeToolConfiguratorResult
         | Promise<SenlerBridgeToolConfiguratorResult>)
     | null = null;
+  let funnelSubmitHandler: (() => SenlerBridgeFunnelConfiguratorResult | Promise<SenlerBridgeFunnelConfiguratorResult>) | null = null;
   let automationStepSubmitHandler:
     | (() =>
         | SenlerBridgeAutomationStepConfiguratorResult
@@ -351,7 +355,9 @@ export function createSenlerBridgeClient(
     const requestMessage = parseSenlerBridgeRequestMessage(event.data);
     if (!requestMessage) return;
     const activeSubmitHandler =
-      requestMessage.method === SENLER_BRIDGE_REQUEST.automationStepConfiguratorSubmit
+      requestMessage.method === SENLER_BRIDGE_REQUEST.funnelConfiguratorSubmit
+        ? funnelSubmitHandler
+        : requestMessage.method === SENLER_BRIDGE_REQUEST.automationStepConfiguratorSubmit
         ? automationStepSubmitHandler
         : submitHandler;
     if (!activeSubmitHandler) {
@@ -369,7 +375,9 @@ export function createSenlerBridgeClient(
       .then(() => activeSubmitHandler())
       .then((rawResult) => {
         const result =
-          requestMessage.method === SENLER_BRIDGE_REQUEST.automationStepConfiguratorSubmit
+          requestMessage.method === SENLER_BRIDGE_REQUEST.funnelConfiguratorSubmit
+            ? parseSenlerBridgeFunnelConfiguratorResult(rawResult)
+            : requestMessage.method === SENLER_BRIDGE_REQUEST.automationStepConfiguratorSubmit
             ? parseSenlerBridgeAutomationStepConfiguratorResult(rawResult)
             : parseSenlerBridgeToolConfiguratorResult(rawResult);
         if (!result) {
@@ -432,6 +440,10 @@ export function createSenlerBridgeClient(
         if (submitHandler === handler) submitHandler = null;
       };
     },
+    onFunnelConfiguratorSubmit(handler) {
+      funnelSubmitHandler = handler;
+      return () => { if (funnelSubmitHandler === handler) funnelSubmitHandler = null; };
+    },
     onAutomationStepConfiguratorSubmit(handler) {
       automationStepSubmitHandler = handler;
       return () => {
@@ -457,6 +469,7 @@ export function createSenlerBridgeClient(
       elementHighlightClearListeners.clear();
       submitHandler = null;
       automationStepSubmitHandler = null;
+      funnelSubmitHandler = null;
       elementActionHandler = null;
       for (const resolver of connectResolvers) {
         clientWindow.clearTimeout(resolver.timeoutId);

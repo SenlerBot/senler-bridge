@@ -1,4 +1,4 @@
-import { SENLER_BRIDGE_BOOTSTRAP_CONTEXT_VERSION, type SenlerBridgeAutomationStepConfiguratorResult, type SenlerBridgeBootstrapMode, type SenlerBridgeContext, type SenlerBridgeElementActionRequest, type SenlerBridgeElementActionResult, type SenlerBridgeLanguage, type SenlerBridgeToolConfiguratorResult, type SenlerBridgeUiContext } from './protocol.js';
+import { SENLER_BRIDGE_BOOTSTRAP_CONTEXT_VERSION, type SenlerBridgeAutomationStepConfiguratorResult, type SenlerBridgeFunnelConfiguratorResult, type SenlerBridgeBootstrapMode, type SenlerBridgeContext, type SenlerBridgeElementActionRequest, type SenlerBridgeElementActionResult, type SenlerBridgeLanguage, type SenlerBridgeToolConfiguratorResult, type SenlerBridgeUiContext } from './protocol.js';
 export interface SenlerBridgeBootstrapContext {
     context_version: typeof SENLER_BRIDGE_BOOTSTRAP_CONTEXT_VERSION | null;
     mode: SenlerBridgeBootstrapMode | null;
@@ -11,6 +11,7 @@ export interface SenlerBridgeClientOptions {
     connectTimeoutMs?: number;
 }
 export interface SenlerBridgeClient {
+    onFunnelConfiguratorSubmit(handler: () => SenlerBridgeFunnelConfiguratorResult | Promise<SenlerBridgeFunnelConfiguratorResult>): () => void;
     connect(): Promise<SenlerBridgeContext>;
     getContext(): SenlerBridgeContext | null;
     onContextChange(listener: (context: SenlerBridgeContext) => void): () => void;

@@ -1,4 +1,4 @@
-import { createElementActionResultMessage, createErrorResponseMessage, createReadyMessage, createSenlerBridgeFrameSizeMessage, createSuccessResponseMessage, isSenlerBridgeClearElementHighlightMessage, parseSenlerBridgeElementActionMessage, parseSenlerBridgeElementActionResult, parseSenlerBridgeInitMessage, parseSenlerBridgeAutomationStepConfiguratorResult, parseSenlerBridgeRequestMessage, parseSenlerBridgeToolConfiguratorResult, parseSenlerBridgeUiMessage, SENLER_BRIDGE_BOOTSTRAP_CONTEXT_VERSION, SENLER_BRIDGE_BOOTSTRAP_MODE, SENLER_BRIDGE_REQUEST, } from './protocol.js';
+import { createElementActionResultMessage, createErrorResponseMessage, createReadyMessage, createSenlerBridgeFrameSizeMessage, createSuccessResponseMessage, isSenlerBridgeClearElementHighlightMessage, parseSenlerBridgeElementActionMessage, parseSenlerBridgeElementActionResult, parseSenlerBridgeInitMessage, parseSenlerBridgeAutomationStepConfiguratorResult, parseSenlerBridgeFunnelConfiguratorResult, parseSenlerBridgeRequestMessage, parseSenlerBridgeToolConfiguratorResult, parseSenlerBridgeUiMessage, SENLER_BRIDGE_BOOTSTRAP_CONTEXT_VERSION, SENLER_BRIDGE_BOOTSTRAP_MODE, SENLER_BRIDGE_REQUEST, } from './protocol.js';
 function normalizeOrigin(origin) {
     const normalized = new URL(origin).origin;
     if (normalized === 'null')
@@ -60,6 +60,7 @@ export function createSenlerBridgeClient(options) {
     let context = null;
     let destroyed = false;
     let submitHandler = null;
+    let funnelSubmitHandler = null;
     let automationStepSubmitHandler = null;
     let elementActionHandler = null;
     const elementHighlightClearListeners = new Set();
@@ -216,9 +217,11 @@ export function createSenlerBridgeClient(options) {
         const requestMessage = parseSenlerBridgeRequestMessage(event.data);
         if (!requestMessage)
             return;
-        const activeSubmitHandler = requestMessage.method === SENLER_BRIDGE_REQUEST.automationStepConfiguratorSubmit
-            ? automationStepSubmitHandler
-            : submitHandler;
+        const activeSubmitHandler = requestMessage.method === SENLER_BRIDGE_REQUEST.funnelConfiguratorSubmit
+            ? funnelSubmitHandler
+            : requestMessage.method === SENLER_BRIDGE_REQUEST.automationStepConfiguratorSubmit
+                ? automationStepSubmitHandler
+                : submitHandler;
         if (!activeSubmitHandler) {
             postToParent(createErrorResponseMessage(requestMessage.request_id, context?.ui.language === 'ru'
                 ? 'Приложение ещё не готово сохранить настройки'
@@ -228,9 +231,11 @@ export function createSenlerBridgeClient(options) {
         void Promise.resolve()
             .then(() => activeSubmitHandler())
             .then((rawResult) => {
-            const result = requestMessage.method === SENLER_BRIDGE_REQUEST.automationStepConfiguratorSubmit
-                ? parseSenlerBridgeAutomationStepConfiguratorResult(rawResult)
-                : parseSenlerBridgeToolConfiguratorResult(rawResult);
+            const result = requestMessage.method === SENLER_BRIDGE_REQUEST.funnelConfiguratorSubmit
+                ? parseSenlerBridgeFunnelConfiguratorResult(rawResult)
+                : requestMessage.method === SENLER_BRIDGE_REQUEST.automationStepConfiguratorSubmit
+                    ? parseSenlerBridgeAutomationStepConfiguratorResult(rawResult)
+                    : parseSenlerBridgeToolConfiguratorResult(rawResult);
             if (!result) {
                 throw new Error(context?.ui.language === 'ru'
                     ? 'Приложение вернуло некорректные настройки'
@@ -282,6 +287,11 @@ export function createSenlerBridgeClient(options) {
                     submitHandler = null;
             };
         },
+        onFunnelConfiguratorSubmit(handler) {
+            funnelSubmitHandler = handler;
+            return () => { if (funnelSubmitHandler === handler)
+                funnelSubmitHandler = null; };
+        },
         onAutomationStepConfiguratorSubmit(handler) {
             automationStepSubmitHandler = handler;
             return () => {
@@ -310,6 +320,7 @@ export function createSenlerBridgeClient(options) {
             elementHighlightClearListeners.clear();
             submitHandler = null;
             automationStepSubmitHandler = null;
+            funnelSubmitHandler = null;
             elementActionHandler = null;
             for (const resolver of connectResolvers) {
                 clientWindow.clearTimeout(resolver.timeoutId);

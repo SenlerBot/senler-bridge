@@ -6,6 +6,7 @@ export const SENLER_BRIDGE_BOOTSTRAP_MODE = {
     test: 'test',
     toolConfigurator: 'tool_configurator',
     automationStepConfigurator: 'automation_step_configurator',
+    funnelConfigurator: 'funnel_configurator',
 };
 export const SENLER_BRIDGE_MESSAGE = {
     ready: 'senler:bridge:ready',
@@ -21,6 +22,7 @@ export const SENLER_BRIDGE_MESSAGE = {
 export const SENLER_BRIDGE_REQUEST = {
     toolConfiguratorSubmit: 'tool-configurator.submit',
     automationStepConfiguratorSubmit: 'automation-step-configurator.submit',
+    funnelConfiguratorSubmit: 'funnel-configurator.submit',
 };
 const MAX_JSON_DEPTH = 20;
 const MAX_JSON_NODES = 5000;
@@ -190,6 +192,17 @@ function parseLaunchContext(value) {
         !isNonEmptyString(value.project_id)) {
         return null;
     }
+    if (value.type === 'funnel_configurator') {
+        if (!isNonEmptyString(value.installation_id) || !isNonEmptyString(value.funnel_id) ||
+            !(value.source_id === null || isNonEmptyString(value.source_id)) ||
+            !isRecord(value.element) || !isNonEmptyString(value.element.id) ||
+            !isNonEmptyString(value.element.key) || !isNonEmptyString(value.element.title) ||
+            value.element.title.length > MAX_TITLE_LENGTH || !isJsonObject(value.configuration))
+            return null;
+        return { type: 'funnel_configurator', app_id: value.app_id, project_id: value.project_id,
+            installation_id: value.installation_id, funnel_id: value.funnel_id, source_id: value.source_id,
+            element: { id: value.element.id, key: value.element.key, title: value.element.title }, configuration: value.configuration };
+    }
     if (value.type === 'embedded_page') {
         if ((value.mode !== 'installed' && value.mode !== 'test') ||
             (value.installation_id !== undefined &&
@@ -323,6 +336,10 @@ export function parseSenlerBridgeToolConfiguratorResult(value) {
             ? { private_data_required: value.private_data_required }
             : {}),
     };
+}
+export function parseSenlerBridgeFunnelConfiguratorResult(value) {
+    return isRecord(value) && value.kind === 'funnel_configurator' && isJsonObject(value.configuration)
+        ? { kind: 'funnel_configurator', configuration: value.configuration } : null;
 }
 export function parseSenlerBridgeAutomationStepConfiguratorResult(value) {
     if (!isRecord(value) ||
@@ -461,7 +478,8 @@ export function parseSenlerBridgeRequestMessage(value) {
     if (!hasBridgeEnvelope(value) ||
         value.type !== SENLER_BRIDGE_MESSAGE.request ||
         (value.method !== SENLER_BRIDGE_REQUEST.toolConfiguratorSubmit &&
-            value.method !== SENLER_BRIDGE_REQUEST.automationStepConfiguratorSubmit) ||
+            value.method !== SENLER_BRIDGE_REQUEST.automationStepConfiguratorSubmit &&
+            value.method !== SENLER_BRIDGE_REQUEST.funnelConfiguratorSubmit) ||
         !isNonEmptyString(value.request_id) ||
         value.request_id.length > MAX_REQUEST_ID_LENGTH) {
         return null;
@@ -497,7 +515,8 @@ export function parseSenlerBridgeResponseMessage(value) {
     }
     if (value.ok !== true)
         return null;
-    const result = parseSenlerBridgeAutomationStepConfiguratorResult(value.result) ??
+    const result = parseSenlerBridgeFunnelConfiguratorResult(value.result) ??
+        parseSenlerBridgeAutomationStepConfiguratorResult(value.result) ??
         parseSenlerBridgeToolConfiguratorResult(value.result);
     return result
         ? {

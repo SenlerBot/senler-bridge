@@ -6,6 +6,7 @@ export declare const SENLER_BRIDGE_BOOTSTRAP_MODE: {
     readonly test: "test";
     readonly toolConfigurator: "tool_configurator";
     readonly automationStepConfigurator: "automation_step_configurator";
+    readonly funnelConfigurator: "funnel_configurator";
 };
 export type SenlerBridgeBootstrapMode = (typeof SENLER_BRIDGE_BOOTSTRAP_MODE)[keyof typeof SENLER_BRIDGE_BOOTSTRAP_MODE];
 export declare const SENLER_BRIDGE_MESSAGE: {
@@ -22,6 +23,7 @@ export declare const SENLER_BRIDGE_MESSAGE: {
 export declare const SENLER_BRIDGE_REQUEST: {
     readonly toolConfiguratorSubmit: "tool-configurator.submit";
     readonly automationStepConfiguratorSubmit: "automation-step-configurator.submit";
+    readonly funnelConfiguratorSubmit: "funnel-configurator.submit";
 };
 export type SenlerBridgeLanguage = 'ru' | 'en';
 export type SenlerBridgeTheme = 'light' | 'dark';
@@ -92,7 +94,21 @@ export interface SenlerBridgeAutomationStepConfiguratorLaunch {
     configuration: SenlerBridgeJsonObject;
     branches: SenlerBridgeAutomationStepBranch[];
 }
-export type SenlerBridgeLaunchContext = SenlerBridgeEmbeddedPageLaunch | SenlerBridgeToolConfiguratorLaunch | SenlerBridgeAutomationStepConfiguratorLaunch;
+export interface SenlerBridgeFunnelConfiguratorLaunch {
+    type: 'funnel_configurator';
+    app_id: string;
+    project_id: string;
+    installation_id: string;
+    funnel_id: string;
+    source_id: string | null;
+    element: {
+        id: string;
+        key: string;
+        title: string;
+    };
+    configuration: SenlerBridgeJsonObject;
+}
+export type SenlerBridgeLaunchContext = SenlerBridgeEmbeddedPageLaunch | SenlerBridgeToolConfiguratorLaunch | SenlerBridgeAutomationStepConfiguratorLaunch | SenlerBridgeFunnelConfiguratorLaunch;
 export interface SenlerBridgeContext {
     ui: SenlerBridgeUiContext;
     launch: SenlerBridgeLaunchContext;
@@ -111,7 +127,11 @@ export interface SenlerBridgeAutomationStepConfiguratorResult {
     configuration: SenlerBridgeJsonObject;
     branches: SenlerBridgeAutomationStepBranch[];
 }
-export type SenlerBridgeSubmitResult = SenlerBridgeToolConfiguratorResult | SenlerBridgeAutomationStepConfiguratorResult;
+export interface SenlerBridgeFunnelConfiguratorResult {
+    kind: 'funnel_configurator';
+    configuration: SenlerBridgeJsonObject;
+}
+export type SenlerBridgeSubmitResult = SenlerBridgeToolConfiguratorResult | SenlerBridgeAutomationStepConfiguratorResult | SenlerBridgeFunnelConfiguratorResult;
 export type SenlerBridgeElementAction = 'highlight' | 'scroll_to' | 'focus' | 'click' | 'fill' | 'clear' | 'select' | 'toggle';
 export type SenlerBridgeElementActionStatus = 'success' | 'not_found' | 'failed' | 'blocked';
 export interface SenlerBridgeElementActionRequest {
@@ -154,7 +174,7 @@ interface SenlerBridgeRequestMessage {
     type: typeof SENLER_BRIDGE_MESSAGE.request;
     protocol_version: typeof SENLER_BRIDGE_PROTOCOL_VERSION;
     request_id: string;
-    method: typeof SENLER_BRIDGE_REQUEST.toolConfiguratorSubmit | typeof SENLER_BRIDGE_REQUEST.automationStepConfiguratorSubmit;
+    method: typeof SENLER_BRIDGE_REQUEST.toolConfiguratorSubmit | typeof SENLER_BRIDGE_REQUEST.automationStepConfiguratorSubmit | typeof SENLER_BRIDGE_REQUEST.funnelConfiguratorSubmit;
 }
 interface SenlerBridgeSuccessResponseMessage {
     source: typeof SENLER_BRIDGE_SOURCE;
@@ -196,6 +216,7 @@ export declare function parseSenlerBridgeUiContext(value: unknown): SenlerBridge
 export declare function parseSenlerBridgeJsonObject(value: unknown): SenlerBridgeJsonObject | null;
 export declare function parseSenlerBridgeContext(value: unknown): SenlerBridgeContext | null;
 export declare function parseSenlerBridgeToolConfiguratorResult(value: unknown): SenlerBridgeToolConfiguratorResult | null;
+export declare function parseSenlerBridgeFunnelConfiguratorResult(value: unknown): SenlerBridgeFunnelConfiguratorResult | null;
 export declare function parseSenlerBridgeAutomationStepConfiguratorResult(value: unknown): SenlerBridgeAutomationStepConfiguratorResult | null;
 export declare function parseSenlerBridgeElementActionRequest(value: unknown): SenlerBridgeElementActionRequest | null;
 export declare function parseSenlerBridgeElementActionResult(value: unknown): SenlerBridgeElementActionResult | null;
@@ -212,7 +233,7 @@ export declare function createReadyMessage(): SenlerBridgeReadyMessage;
 export declare function createInitMessage(context: SenlerBridgeContext): SenlerBridgeInitMessage;
 export declare function createUiMessage(ui: SenlerBridgeUiContext): SenlerBridgeUiMessage;
 export declare function createSenlerBridgeFrameSizeMessage(height: number): SenlerBridgeFrameSizeMessage;
-export declare function createSubmitRequestMessage(requestId: string, method?: typeof SENLER_BRIDGE_REQUEST.toolConfiguratorSubmit | typeof SENLER_BRIDGE_REQUEST.automationStepConfiguratorSubmit): SenlerBridgeRequestMessage;
+export declare function createSubmitRequestMessage(requestId: string, method?: typeof SENLER_BRIDGE_REQUEST.toolConfiguratorSubmit | typeof SENLER_BRIDGE_REQUEST.automationStepConfiguratorSubmit | typeof SENLER_BRIDGE_REQUEST.funnelConfiguratorSubmit): SenlerBridgeRequestMessage;
 export declare function createElementActionMessage(requestId: string, request: SenlerBridgeElementActionRequest): SenlerBridgeElementActionMessage;
 export declare function createElementActionResultMessage(requestId: string, result: SenlerBridgeElementActionResult): SenlerBridgeElementActionResultMessage;
 export declare function createClearElementHighlightMessage(): SenlerBridgeClearElementHighlightMessage;

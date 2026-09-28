@@ -139,9 +139,18 @@ export function createSenlerBridgeHost(options) {
                 return Promise.reject(new SenlerBridgeHostError('invalid_launch', 'Automation step configurator is unavailable for this iframe'));
             }
             return requestSubmit(SENLER_BRIDGE_REQUEST.automationStepConfiguratorSubmit).then((result) => {
-                if (!('kind' in result)) {
+                if (!('kind' in result) || result.kind !== 'automation_step_configurator') {
                     throw new SenlerBridgeHostError('remote_error', 'Embedded application returned a tool configuration result');
                 }
+                return result;
+            });
+        },
+        requestFunnelConfiguratorSubmit() {
+            if (context.launch.type !== 'funnel_configurator')
+                return Promise.reject(new SenlerBridgeHostError('invalid_launch', 'Funnel configurator is unavailable for this iframe'));
+            return requestSubmit(SENLER_BRIDGE_REQUEST.funnelConfiguratorSubmit).then((result) => {
+                if (!('kind' in result) || result.kind !== 'funnel_configurator')
+                    throw new SenlerBridgeHostError('remote_error', 'Embedded application returned a different configuration kind');
                 return result;
             });
         },

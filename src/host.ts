@@ -16,6 +16,7 @@ import {
   type SenlerBridgeElementActionRequest,
   type SenlerBridgeElementActionResult,
   type SenlerBridgeAutomationStepConfiguratorResult,
+  type SenlerBridgeFunnelConfiguratorResult,
   type SenlerBridgeSubmitResult,
   type SenlerBridgeToolConfiguratorResult,
   type SenlerBridgeUiContext,
@@ -38,6 +39,7 @@ export interface SenlerBridgeHost {
   setUi(ui: SenlerBridgeUiContext): void;
   requestToolConfiguratorSubmit(): Promise<SenlerBridgeToolConfiguratorResult>;
   requestAutomationStepConfiguratorSubmit(): Promise<SenlerBridgeAutomationStepConfiguratorResult>;
+  requestFunnelConfiguratorSubmit(): Promise<SenlerBridgeFunnelConfiguratorResult>;
   requestElementAction(
     request: SenlerBridgeElementActionRequest,
   ): Promise<SenlerBridgeElementActionResult>;
@@ -162,7 +164,8 @@ export function createSenlerBridgeHost(
   const requestSubmit = (
     method:
       | typeof SENLER_BRIDGE_REQUEST.toolConfiguratorSubmit
-      | typeof SENLER_BRIDGE_REQUEST.automationStepConfiguratorSubmit,
+      | typeof SENLER_BRIDGE_REQUEST.automationStepConfiguratorSubmit
+      | typeof SENLER_BRIDGE_REQUEST.funnelConfiguratorSubmit,
   ): Promise<SenlerBridgeSubmitResult> => {
     if (destroyed) {
       return Promise.reject(
@@ -257,12 +260,19 @@ export function createSenlerBridgeHost(
       return requestSubmit(
         SENLER_BRIDGE_REQUEST.automationStepConfiguratorSubmit,
       ).then((result) => {
-        if (!('kind' in result)) {
+        if (!('kind' in result) || result.kind !== 'automation_step_configurator') {
           throw new SenlerBridgeHostError(
             'remote_error',
             'Embedded application returned a tool configuration result',
           );
         }
+        return result;
+      });
+    },
+    requestFunnelConfiguratorSubmit() {
+      if (context.launch.type !== 'funnel_configurator') return Promise.reject(new SenlerBridgeHostError('invalid_launch', 'Funnel configurator is unavailable for this iframe'));
+      return requestSubmit(SENLER_BRIDGE_REQUEST.funnelConfiguratorSubmit).then((result) => {
+        if (!('kind' in result) || result.kind !== 'funnel_configurator') throw new SenlerBridgeHostError('remote_error', 'Embedded application returned a different configuration kind');
         return result;
       });
     },
